@@ -104,40 +104,6 @@
       font-size: 1rem;
       transition: background-color 0.8s;
     }
-    
-    .holiday-message {
-      position: absolute;
-      bottom: 10px;
-      width: 100%;
-      text-align: center;
-      font-size: 1.2em;
-      color: white;
-      opacity: 0;
-      transition: opacity 1s;
-    }
-    
-    .snowflake, .heart {
-      position: fixed;
-      top: -10px;
-      width: 20px;
-      height: 20px;
-      background-size: cover;
-      animation: fall 10s linear infinite;
-    }
-
-    .snowflake {
-      background-image: url('https://upload.wikimedia.org/wikipedia/commons/9/99/Snowflake_icon.svg');
-    }
-
-    .heart {
-      background-image: url('https://upload.wikimedia.org/wikipedia/commons/2/2a/Redheart.png');
-    }
-
-    @keyframes fall {
-      to {
-        transform: translateY(100vh);
-      }
-    }
   </style>
 </head>
 <body>
@@ -149,7 +115,6 @@
       <option value="en">EN</option>
       <option value="ru">RU</option>
     </select>
-    <button id="resetHolidayButton" style="display:none;" onclick="resetHoliday()">Сбросить праздник</button>
   </div>
 
   <div class="container">
@@ -162,56 +127,29 @@
       <span id="day">01</span>
     </div>
     <div class="weekday" id="weekday">MON</div>
-    <div id="holidayMessage" class="holiday-message"></div>    
   </div>
 
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      checkHoliday();
-    });
-
-    let isHolidayThemeActive = false;
-    let savedUserTheme = null;
-
-    function checkHoliday() {
-      const holiday = getTodayHoliday();
-      if (holiday) {
-        savedUserTheme = getCurrentTheme(); // Сохраняем текущую тему
-        applyHolidayTheme(holiday);
-        showHolidayMessage(holiday.message);
-      }
-    }
-
-    function applyHolidayTheme(holiday) {
-      const theme = holidayThemes.find(t => t.name === holiday.theme);
-      if (theme) {
-        applyTheme(theme);
-        isHolidayThemeActive = true;
-        showResetHolidayButton();
-      }
-    }
-
     const themes = {
       "Themes": [
         { name: "Green & Purple", accent: '#56ff80', datebg: '#7c7cff' },
-        { name: "Red & Yellow", accent: '#ff6b6b', datebg: '#ffd93d' }
+        { name: "Red & Yellow", accent: '#ff6b6b', datebg: '#ffd93d' },
+        { name: "Blue & Light Blue", accent: '#00bcd4', datebg: '#2196f3' }
       ],
       "Max Themes": [
-        { name: "Ocean", accent: '#00e5ff', datebg: '#7c4dff', bg: '#003c8f' }
+        { name: "Ocean", accent: '#00e5ff', datebg: '#7c4dff', bg: '#003c8f' },
+        { name: "Galaxy", accent: '#bb86fc', datebg: '#3700b3', background: '#121212' },
+        { name: "Nature", accent: '#4caf50', datebg: '#8bc34a', background: '#2e7d32' }
       ],
       "Mood Themes": [
         { name: "Morning", accent: '#ffeb3b', datebg: '#4caf50', bg: '#fff8e1' },
         { name: "Night", accent: '#90caf9', datebg: '#37474f', bg: '#0d47a1' }
       ],
       "Holidays Themes": [
-        { month: 1, day: 1, theme: "New Year", message: "🎆 Happy New Year!" },
-        { month: 2, day: 14, theme: "Valentine's", message: "💖 Happy Valentine's!" },
-        { month: 4, day: 12, theme: "Cosmonautics Day", message: "🚀 День Космонавтики!" },
-        { month: 5, day: 9, theme: "Victory Day", message: "🎖️ С Днём Победы!" },
-        { month: 6, day: 12, theme: "Russia Day", message: "🇷🇺 С Днём России!" },
-        { month: 9, day: 1, theme: "Knowledge Day", message: "📚 С Днём знаний!" },
-        { month: 10, day: 31, theme: "Halloween", message: "🎃 Happy Halloween!" },
-        { month: 12, day: 25, theme: "Christmas", message: "🎄 Merry Christmas!" },
+        { name: "New Year", accent: '#00e5ff', datebg: '#ff4081', bg: '#0d47a1', message: "Happy New Year! 🎆" },
+        { name: "Christmas", accent: '#4caf50', datebg: '#f44336', bg: '#1b5e20', message: "Merry Christmas! 🎄" },
+        { name: "Valentine's", accent: '#f50057', datebg: '#ff80ab', bg: '#880e4f', message: "Happy Valentine's! 💖" },
+        { name: "Halloween", accent: '#ff9800', datebg: '#ff5722', bg: '#4e342e', message: "Happy Halloween! 🎃" }
       ]
     };
 
@@ -238,80 +176,6 @@
         themes[group].forEach(theme => {
           allThemes.push({ ...theme, group });
         });
-      }
-    }
-
-    function calculateEaster(year) {
-      const a = year % 19;
-      const b = Math.floor(year / 100);
-      const c = year % 100;
-      const d = Math.floor(b / 4);
-      const e = b % 4;
-      const f = Math.floor((b + 8) / 25);
-      const g = Math.floor((b - f + 1) / 3);
-      const h = (19 * a + b - d - g + 15) % 30;
-      const i = Math.floor(c / 4);
-      const k = c % 4;
-      const l = (32 + 2 * e + 2 * i - h - k) % 7;
-      const m = Math.floor((a + 11 * h + 22 * l) / 451);
-      const month = Math.floor((h + l - 7 * m + 114) / 31); // 3 = March, 4 = April
-      const day = ((h + l - 7 * m + 114) % 31) + 1;
-      return { month, day };
-    }
-
-    function getTodayHoliday() {
-      const today = new Date();
-      const year = today.getFullYear();
-      const month = today.getMonth() + 1; // January is 0
-      const day = today.getDate();
-
-      const easter = calculateEaster(year);
-      if (easter.month === month && easter.day === day) {
-        return { theme: "Easter", message: "🐣 Happy Easter!" };
-      }
-
-      for (let holiday of holidays) {
-        if (holiday.month === month && holiday.day === day) {
-          return holiday;
-        }
-      }
-      return null;
-    }
-
-    function showHolidayMessage(message) {
-      const msg = document.getElementById('holidayMessage');
-      msg.textContent = message;
-      msg.style.opacity = 1; 
-    }
-
-    function hideHolidayMessage() {
-      const msg = document.getElementById('holidayMessage');
-      msg.style.opacity = 0;
-    }
-
-    function addHolidayAnimation(holidayName) {
-      if (holidayName === "New Year") {
-        createSnowfall();
-      } else if (holidayName === "Valentine's") {
-        createHearts();
-      }
-    }
-    
-    function createSnowfall() {
-      for (let i = 0; i < 30; i++) {
-        const snowflake = document.createElement('div');
-        snowflake.className = 'snowflake';
-        snowflake.style.left = Math.random() * window.innerWidth + 'px';
-        document.body.appendChild(snowflake);
-      }
-    }
-
-    function createHearts() {
-      for (let i = 0; i < 20; i++) {
-        const heart = document.createElement('div');
-        heart.className = 'heart';
-        heart.style.left = Math.random() * window.innerWidth + 'px';
-        document.body.appendChild(heart);
       }
     }
 
@@ -385,23 +249,6 @@
       } else {
         document.body.style.color = 'black';
       }
-    }
-
-    function showResetHolidayButton() {
-      document.getElementById('resetHolidayButton').style.display = 'block';
-    }
-
-    function hideResetHolidayButton() {
-      document.getElementById('resetHolidayButton').style.display = 'none';
-    }
-
-    function resetHoliday() {
-      if (savedUserTheme) {
-        applyTheme(savedUserTheme);
-      }
-      hideHolidayMessage();
-      hideResetHolidayButton();
-      isHolidayThemeActive = false;
     }
 
     window.onload = () => {
