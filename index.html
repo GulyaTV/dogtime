@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Clock Calendar</title>
+  <style>
+    :root {
+      --accent-color: #56ff80;
+      --date-bg-color: #7c7cff;
+      --background-color: #000000;
+      --gradient-bg: linear-gradient(135deg, #000000, #1a1a1a);
+    }
+
+    body {
+      margin: 0;
+      background: var(--gradient-bg);
+      background-size: 400% 400%;
+      animation: gradientMove 15s ease infinite;
+      color: #fff;
+      font-family: 'Arial', sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      transition: background 1s, color 1s;
+    }
+
+    @keyframes gradientMove {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    .container {
+      text-align: center;
+    }
+
+    .time {
+      font-size: 8rem;
+      font-weight: bold;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: color 0.8s;
+    }
+
+    #hours {
+      color: white;
+    }
+
+    #minutes {
+      color: var(--accent-color);
+      margin-top: 10px;
+    }
+
+    .date {
+      margin-top: 20px;
+      font-size: 3rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      transition: background-color 0.8s, color 0.8s;
+    }
+
+    #month {
+      margin-right: 10px;
+      color: white;
+    }
+
+    #day {
+      background-color: var(--date-bg-color);
+      color: black;
+      padding: 0 8px;
+      border-radius: 5px;
+      transition: background-color 0.8s, color 0.8s;
+    }
+
+    .weekday {
+      margin-top: 20px;
+      font-size: 5rem;
+      color: var(--accent-color);
+      font-weight: bold;
+      transition: color 0.8s;
+    }
+
+    .controls {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 10px;
+    }
+
+    .theme-button, .theme-select, .lang-select {
+      background: var(--accent-color);
+      border: none;
+      color: black;
+      font-weight: bold;
+      padding: 8px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: background-color 0.8s;
+    }
+    
+    .holiday-message {
+      position: absolute;
+      bottom: 10px;
+      width: 100%;
+      text-align: center;
+      font-size: 1.2em;
+      color: white;
+      opacity: 0;
+      transition: opacity 1s;
+    }
+    
+    .snowflake, .heart {
+      position: fixed;
+      top: -10px;
+      width: 20px;
+      height: 20px;
+      background-size: cover;
+      animation: fall 10s linear infinite;
+    }
+
+    .snowflake {
+      background-image: url('https://upload.wikimedia.org/wikipedia/commons/9/99/Snowflake_icon.svg');
+    }
+
+    .heart {
+      background-image: url('https://upload.wikimedia.org/wikipedia/commons/2/2a/Redheart.png');
+    }
+
+    @keyframes fall {
+      to {
+        transform: translateY(100vh);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="controls">
+    <button class="theme-button" onclick="nextTheme()">Next Theme</button>
+    <select class="theme-select" id="themeSelect" onchange="selectTheme(this.value)">
+    </select>
+    <select class="lang-select" id="langSelect" onchange="changeLanguage(this.value)">
+      <option value="en">EN</option>
+      <option value="ru">RU</option>
+    </select>
+    <button id="resetHolidayButton" style="display:none;" onclick="resetHoliday()">Сбросить праздник</button>
+  </div>
+
+  <div class="container">
+    <div class="time">
+      <span id="hours">00</span>
+      <span id="minutes">00</span>
+    </div>
+    <div class="date">
+      <span id="month">JAN</span>
+      <span id="day">01</span>
+    </div>
+    <div class="weekday" id="weekday">MON</div>
+    <div id="holidayMessage" class="holiday-message"></div>    
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      checkHoliday();
+    });
+
+    let isHolidayThemeActive = false;
+    let savedUserTheme = null;
+
+    function checkHoliday() {
+      const holiday = getTodayHoliday();
+      if (holiday) {
+        savedUserTheme = getCurrentTheme(); // Сохраняем текущую тему
+        applyHolidayTheme(holiday);
+        showHolidayMessage(holiday.message);
+      }
+    }
+
+    function applyHolidayTheme(holiday) {
+      const theme = holidayThemes.find(t => t.name === holiday.theme);
+      if (theme) {
+        applyTheme(theme);
+        isHolidayThemeActive = true;
+        showResetHolidayButton();
+      }
+    }
+
+    const themes = {
+      "Themes": [
+        { name: "Green & Purple", accent: '#56ff80', datebg: '#7c7cff' },
+        { name: "Red & Yellow", accent: '#ff6b6b', datebg: '#ffd93d' }
+      ],
+      "Max Themes": [
+        { name: "Ocean", accent: '#00e5ff', datebg: '#7c4dff', bg: '#003c8f' }
+      ],
+      "Mood Themes": [
+        { name: "Morning", accent: '#ffeb3b', datebg: '#4caf50', bg: '#fff8e1' },
+        { name: "Night", accent: '#90caf9', datebg: '#37474f', bg: '#0d47a1' }
+      ],
+      "Holidays Themes": [
+        { month: 1, day: 1, theme: "New Year", message: "🎆 Happy New Year!" },
+        { month: 2, day: 14, theme: "Valentine's", message: "💖 Happy Valentine's!" },
+        { month: 4, day: 12, theme: "Cosmonautics Day", message: "🚀 День Космонавтики!" },
+        { month: 5, day: 9, theme: "Victory Day", message: "🎖️ С Днём Победы!" },
+        { month: 6, day: 12, theme: "Russia Day", message: "🇷🇺 С Днём России!" },
+        { month: 9, day: 1, theme: "Knowledge Day", message: "📚 С Днём знаний!" },
+        { month: 10, day: 31, theme: "Halloween", message: "🎃 Happy Halloween!" },
+        { month: 12, day: 25, theme: "Christmas", message: "🎄 Merry Christmas!" },
+      ]
+    };
+
+    const languageTexts = {
+      en: {
+        months: ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", 
+                 "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"],
+        weekdays: ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"]
+      },
+      ru: {
+        months: ["ЯНВ", "ФЕВ", "МАР", "АПР", "МАЙ", "ИЮНЬ", 
+                 "ИЮЛЬ", "АВГ", "СЕН", "ОКТ", "НОЯ", "ДЕК"],
+        weekdays: ["ВС", "ПН", "ВТ", "СР", "ЧТ", "ПТ", "СБ"]
+      }
+    };
+
+    let currentLanguage = 'en';
+    let allThemes = [];
+    let currentThemeIndex = 0;
+
+    function flattenThemes() {
+      allThemes = [];
+      for (const group in themes) {
+        themes[group].forEach(theme => {
+          allThemes.push({ ...theme, group });
+        });
+      }
+    }
+
+    function calculateEaster(year) {
+      const a = year % 19;
+      const b = Math.floor(year / 100);
+      const c = year % 100;
+      const d = Math.floor(b / 4);
+      const e = b % 4;
+      const f = Math.floor((b + 8) / 25);
+      const g = Math.floor((b - f + 1) / 3);
+      const h = (19 * a + b - d - g + 15) % 30;
+      const i = Math.floor(c / 4);
+      const k = c % 4;
+      const l = (32 + 2 * e + 2 * i - h - k) % 7;
+      const m = Math.floor((a + 11 * h + 22 * l) / 451);
+      const month = Math.floor((h + l - 7 * m + 114) / 31); // 3 = March, 4 = April
+      const day = ((h + l - 7 * m + 114) % 31) + 1;
+      return { month, day };
+    }
+
+    function getTodayHoliday() {
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = today.getMonth() + 1; // January is 0
+      const day = today.getDate();
+
+      const easter = calculateEaster(year);
+      if (easter.month === month && easter.day === day) {
+        return { theme: "Easter", message: "🐣 Happy Easter!" };
+      }
+
+      for (let holiday of holidays) {
+        if (holiday.month === month && holiday.day === day) {
+          return holiday;
+        }
+      }
+      return null;
+    }
+
+    function showHolidayMessage(message) {
+      const msg = document.getElementById('holidayMessage');
+      msg.textContent = message;
+      msg.style.opacity = 1; 
+    }
+
+    function hideHolidayMessage() {
+      const msg = document.getElementById('holidayMessage');
+      msg.style.opacity = 0;
+    }
+
+    function addHolidayAnimation(holidayName) {
+      if (holidayName === "New Year") {
+        createSnowfall();
+      } else if (holidayName === "Valentine's") {
+        createHearts();
+      }
+    }
+    
+    function createSnowfall() {
+      for (let i = 0; i < 30; i++) {
+        const snowflake = document.createElement('div');
+        snowflake.className = 'snowflake';
+        snowflake.style.left = Math.random() * window.innerWidth + 'px';
+        document.body.appendChild(snowflake);
+      }
+    }
+
+    function createHearts() {
+      for (let i = 0; i < 20; i++) {
+        const heart = document.createElement('div');
+        heart.className = 'heart';
+        heart.style.left = Math.random() * window.innerWidth + 'px';
+        document.body.appendChild(heart);
+      }
+    }
+
+    function applyTheme(index) {
+      const theme = allThemes[index];
+      if (!theme) return; // защита от undefined
+      document.documentElement.style.setProperty('--accent-color', theme.accent);
+      document.documentElement.style.setProperty('--date-bg-color', theme.datebg);
+      if (theme.bg) {
+        document.documentElement.style.setProperty('--background-color', theme.bg);
+        document.documentElement.style.setProperty('--gradient-bg', `linear-gradient(135deg, ${theme.bg}, #000000)`);
+      } else {
+        document.documentElement.style.setProperty('--background-color', '#000000');
+        document.documentElement.style.setProperty('--gradient-bg', `linear-gradient(135deg, #000000, #1a1a1a)`);
+      }
+      currentThemeIndex = index;
+      localStorage.setItem('selectedTheme', index);
+      document.getElementById('themeSelect').value = index;
+    }
+
+    function nextTheme() {
+      currentThemeIndex = (currentThemeIndex + 1) % allThemes.length;
+      applyTheme(currentThemeIndex);
+    }
+
+    function selectTheme(index) {
+      applyTheme(Number(index));
+    }
+
+    function updateClock() {
+      const now = new Date();
+      const hours = now.getHours().toString().padStart(2, '0');
+      const minutes = now.getMinutes().toString().padStart(2, '0');
+      const day = now.getDate().toString().padStart(2, '0');
+
+      const monthNames = languageTexts[currentLanguage].months;
+      const weekdayNames = languageTexts[currentLanguage].weekdays;
+
+      document.getElementById('hours').textContent = hours;
+      document.getElementById('minutes').textContent = minutes;
+      document.getElementById('day').textContent = day;
+      document.getElementById('month').textContent = monthNames[now.getMonth()];
+      document.getElementById('weekday').textContent = weekdayNames[now.getDay()];
+    }
+
+    function changeLanguage(lang) {
+      currentLanguage = lang;
+      updateClock();
+    }
+
+    function populateThemeSelect() {
+      const select = document.getElementById('themeSelect');
+      let index = 0;
+      for (const groupName in themes) {
+        const optgroup = document.createElement('optgroup');
+        optgroup.label = groupName;
+        themes[groupName].forEach(theme => {
+          const option = document.createElement('option');
+          option.value = index;
+          option.textContent = theme.name;
+          optgroup.appendChild(option);
+          index++;
+        });
+        select.appendChild(optgroup);
+      }
+    }
+
+    function detectDeviceTheme() {
+      if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.style.color = 'white';
+      } else {
+        document.body.style.color = 'black';
+      }
+    }
+
+    function showResetHolidayButton() {
+      document.getElementById('resetHolidayButton').style.display = 'block';
+    }
+
+    function hideResetHolidayButton() {
+      document.getElementById('resetHolidayButton').style.display = 'none';
+    }
+
+    function resetHoliday() {
+      if (savedUserTheme) {
+        applyTheme(savedUserTheme);
+      }
+      hideHolidayMessage();
+      hideResetHolidayButton();
+      isHolidayThemeActive = false;
+    }
+
+    window.onload = () => {
+      flattenThemes();
+      populateThemeSelect();
+      detectDeviceTheme();
+
+      if (localStorage.getItem('selectedTheme')) {
+        applyTheme(Number(localStorage.getItem('selectedTheme')));
+      } else {
+        applyTheme(0);
+      }
+
+      setInterval(updateClock, 1000);
+      updateClock();
+    };
+  </script>
+</body>
+</html>
